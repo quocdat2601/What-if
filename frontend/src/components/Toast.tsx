@@ -66,6 +66,7 @@ const Toast: React.FC<ToastProps> = ({
 
     return (
         <div 
+            role="alert"
             className={`${getToastStyles()} ${
                 isAnimating 
                     ? 'translate-x-0 opacity-100' 
@@ -85,6 +86,7 @@ const Toast: React.FC<ToastProps> = ({
                             setIsAnimating(false);
                             setTimeout(onClose, 300);
                         }}
+                        aria-label="Close"
                         className="text-white hover:text-gray-200 focus:outline-none focus:text-gray-200 transition-colors duration-200"
                     >
                         <span className="text-lg">×</span>

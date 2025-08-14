@@ -79,7 +79,9 @@ export class Event {
         this.rarityFactor = rarityFactor;
         this.source = source;
         this.prerequisites = prerequisites;
-        this.aiSignatureHash = aiSignatureHash;
+        if (aiSignatureHash) {
+            this.aiSignatureHash = aiSignatureHash;
+        }
         this.createdAt = createdAt || new Date();
         this.isActive = isActive;
     }
@@ -111,7 +113,7 @@ export class Event {
         }
 
         // Simple prerequisite checking - can be enhanced
-        for (const [stat, requirement] of Object.entries(this.prerequisites)) {
+        for (const [stat, _requirement] of Object.entries(this.prerequisites)) {
             if (playerStats[stat] === undefined) {
                 return false;
             }
