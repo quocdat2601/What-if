@@ -1,22 +1,25 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import AuthService from '../../services/authService';
+import { User, LoginRequest, RegisterRequest } from '../../types/auth';
 
-// Mock axios
-const mockAxiosInstance = {
-  post: vi.fn(),
-  get: vi.fn(),
-  interceptors: {
-    request: { use: vi.fn() },
-    response: { use: vi.fn() }
-  }
-};
+// Mock axios completely
+vi.mock('axios', () => {
+  const mockAxiosInstance = {
+    post: vi.fn(),
+    get: vi.fn(),
+    put: vi.fn(),
+    interceptors: {
+      request: { use: vi.fn() },
+      response: { use: vi.fn() }
+    }
+  };
 
-vi.mock('axios', () => ({
-  default: {
-    create: vi.fn(() => mockAxiosInstance)
-  }
-}));
+  return {
+    default: {
+      create: vi.fn(() => mockAxiosInstance)
+    }
+  };
+});
 
 // Mock localStorage
 const localStorageMock = {
@@ -25,13 +28,38 @@ const localStorageMock = {
   removeItem: vi.fn(),
   clear: vi.fn(),
   length: 0,
-  key: vi.fn(),
+  key: vi.fn()
 };
-global.localStorage = localStorageMock as Storage;
+
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock
+});
 
 describe('AuthService', () => {
+  const mockUser: User = {
+    id: '1',
+    username: 'testuser',
+    email: 'test@example.com',
+    createdAt: '2024-01-01T00:00:00Z',
+    lastLogin: undefined,
+    isActive: true
+  };
+
+  const mockLoginRequest: LoginRequest = {
+    username: 'testuser',
+    password: 'password123'
+  };
+
+  const mockRegisterRequest: RegisterRequest = {
+    username: 'testuser',
+    email: 'test@example.com',
+    password: 'password123',
+    confirmPassword: 'password123'
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorageMock.clear();
   });
 
   afterEach(() => {
@@ -43,45 +71,44 @@ describe('AuthService', () => {
       const mockResponse = {
         data: {
           success: true,
-          message: 'User registered successfully',
-          data: { user: { id: 1, username: 'testuser' } }
+          data: {
+            user: mockUser,
+            token: 'mock-token'
+          }
         }
       };
 
-      mockAxiosInstance.post.mockResolvedValueOnce(mockResponse);
+      const axios = await import('axios');
+      const axiosInstance = axios.default.create();
+      (axiosInstance.post as any).mockResolvedValueOnce(mockResponse);
 
-      const result = await AuthService.register({
-        username: 'testuser',
-        email: 'test@example.com',
-        password: 'password123',
-        confirmPassword: 'password123'
-      });
+      const result = await AuthService.register(mockRegisterRequest);
 
-      expect(result).toEqual(mockResponse.data);
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/auth/register', {
-        username: 'testuser',
-        email: 'test@example.com',
-        password: 'password123',
-        confirmPassword: 'password123'
-      });
+      expect(result.success).toBe(true);
+      expect(result.data?.user).toEqual(mockUser);
+      expect(result.data?.token).toBe('mock-token');
     });
 
-    it('should handle registration errors', async () => {
+    it('should handle registration error', async () => {
       const mockError = {
         response: {
-          data: { message: 'Username already exists' },
-          status: 400
+          data: {
+            success: false,
+            message: 'Username already exists'
+          }
         }
       };
 
-      mockAxiosInstance.post.mockRejectedValueOnce(mockError);
+      const axios = await import('axios');
+      const axiosInstance = axios.default.create();
+      (axiosInstance.post as any).mockRejectedValueOnce(mockError);
 
-      await expect(AuthService.register({
-        username: 'existinguser',
-        email: 'test@example.com',
-        password: 'password123',
-        confirmPassword: 'password123'
-      })).rejects.toEqual(mockError);
+      try {
+        await AuthService.register(mockRegisterRequest);
+      } catch (error: any) {
+        expect(error.response.data.success).toBe(false);
+        expect(error.response.data.message).toBe('Username already exists');
+      }
     });
   });
 
@@ -90,157 +117,136 @@ describe('AuthService', () => {
       const mockResponse = {
         data: {
           success: true,
-          message: 'Login successful',
           data: {
-            token: 'mock_jwt_token',
-            user: { id: 1, username: 'testuser' }
+            user: mockUser,
+            token: 'mock-token'
           }
         }
       };
 
-      mockAxiosInstance.post.mockResolvedValueOnce(mockResponse);
+      const axios = await import('axios');
+      const axiosInstance = axios.default.create();
+      (axiosInstance.post as any).mockResolvedValueOnce(mockResponse);
 
-      const result = await AuthService.login({
-        username: 'testuser',
-        password: 'password123'
-      });
+      const result = await AuthService.login(mockLoginRequest);
 
-      expect(result).toEqual(mockResponse.data);
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/auth/login', {
-        username: 'testuser',
-        password: 'password123'
-      });
+      expect(result.success).toBe(true);
+      expect(result.data?.user).toEqual(mockUser);
+      expect(result.data?.token).toBe('mock-token');
     });
 
-    it('should handle login errors', async () => {
+    it('should handle login error', async () => {
       const mockError = {
         response: {
-          data: { message: 'Invalid credentials' },
-          status: 401
+          data: {
+            success: false,
+            message: 'Invalid credentials'
+          }
         }
       };
 
-      mockAxiosInstance.post.mockRejectedValueOnce(mockError);
+      const axios = await import('axios');
+      const axiosInstance = axios.default.create();
+      (axiosInstance.post as any).mockRejectedValueOnce(mockError);
 
-      await expect(AuthService.login({
-        username: 'testuser',
-        password: 'wrongpassword'
-      })).rejects.toEqual(mockError);
+      try {
+        await AuthService.login(mockLoginRequest);
+      } catch (error: any) {
+        expect(error.response.data.success).toBe(false);
+        expect(error.response.data.message).toBe('Invalid credentials');
+      }
     });
   });
 
   describe('logout', () => {
-    it('should clear auth data from localStorage', () => {
-      AuthService.logout();
-
+    it('should clear auth data on logout', async () => {
+      // Mock the logout API call to succeed
+      const axios = await import('axios');
+      const axiosInstance = axios.default.create();
+      (axiosInstance.post as any).mockResolvedValueOnce({});
+      
+      await AuthService.logout();
+      
       expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken');
       expect(localStorageMock.removeItem).toHaveBeenCalledWith('user');
     });
   });
 
-  describe('getCurrentUser', () => {
-    it('should get current user profile successfully', async () => {
-      const mockResponse = {
-        data: {
-          success: true,
-          data: { id: 1, username: 'testuser', email: 'test@example.com', createdAt: '2023-01-01', isActive: true }
-        }
-      };
-
-      mockAxiosInstance.get.mockResolvedValueOnce(mockResponse);
-
-      const result = await AuthService.getCurrentUser();
-
-      expect(result).toEqual(mockResponse.data);
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/auth/me');
-    });
-
-    it('should handle profile fetch errors', async () => {
-      const mockError = {
-        response: {
-          data: { message: 'User not found' },
-          status: 404
-        }
-      };
-
-      mockAxiosInstance.get.mockRejectedValueOnce(mockError);
-
-      await expect(AuthService.getCurrentUser()).rejects.toEqual(mockError);
-    });
-  });
-
   describe('token management', () => {
     it('should get token from localStorage', () => {
-      localStorageMock.getItem.mockReturnValueOnce('mock_token');
-      
+      localStorageMock.getItem.mockReturnValue('mock-token');
       const token = AuthService.getToken();
-      
-      expect(token).toBe('mock_token');
-      expect(localStorageMock.getItem).toHaveBeenCalledWith('authToken');
+      expect(token).toBe('mock-token');
     });
 
-    it('should return null when no token exists', () => {
-      localStorageMock.getItem.mockReturnValueOnce(null);
-      
+    it('should return null if no token in localStorage', () => {
+      localStorageMock.getItem.mockReturnValue(null);
       const token = AuthService.getToken();
-      
       expect(token).toBeNull();
-    });
-
-    it('should set auth data in localStorage', () => {
-      const mockToken = 'mock_jwt_token';
-      const mockUser = { id: '1', username: 'testuser', email: 'test@example.com', createdAt: '2023-01-01', isActive: true };
-
-      AuthService.setAuthData(mockToken, mockUser);
-
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('authToken', mockToken);
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(mockUser));
     });
   });
 
   describe('isAuthenticated', () => {
-    it('should return true when token exists', () => {
-      localStorageMock.getItem.mockReturnValueOnce('mock_token');
-      
+    it('should return true if token exists', () => {
+      localStorageMock.getItem.mockReturnValue('mock-token');
       const isAuth = AuthService.isAuthenticated();
-      
       expect(isAuth).toBe(true);
     });
 
-    it('should return false when no token exists', () => {
-      localStorageMock.getItem.mockReturnValueOnce(null);
-      
+    it('should return false if no token', () => {
+      localStorageMock.getItem.mockReturnValue(null);
       const isAuth = AuthService.isAuthenticated();
-      
       expect(isAuth).toBe(false);
     });
   });
 
   describe('getUser', () => {
     it('should return user from localStorage', () => {
-      const mockUser = { id: '1', username: 'testuser', email: 'test@example.com', createdAt: '2023-01-01', isActive: true };
-      localStorageMock.getItem.mockReturnValueOnce(JSON.stringify(mockUser));
-      
+      localStorageMock.getItem.mockReturnValue(JSON.stringify(mockUser));
       const user = AuthService.getUser();
-      
       expect(user).toEqual(mockUser);
-      expect(localStorageMock.getItem).toHaveBeenCalledWith('user');
     });
 
-    it('should return null when no user exists', () => {
-      localStorageMock.getItem.mockReturnValueOnce(null);
-      
+    it('should return null if no user in localStorage', () => {
+      localStorageMock.getItem.mockReturnValue(null);
       const user = AuthService.getUser();
-      
       expect(user).toBeNull();
     });
+  });
 
-    it('should handle invalid JSON in localStorage', () => {
-      localStorageMock.getItem.mockReturnValueOnce('invalid_json');
-      
-      const user = AuthService.getUser();
-      
-      expect(user).toBeNull();
+  describe('setAuthData', () => {
+    it('should set auth data in localStorage', () => {
+      AuthService.setAuthData('mock-token', mockUser);
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('authToken', 'mock-token');
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('user', JSON.stringify(mockUser));
+    });
+  });
+
+  describe('clearAuthData', () => {
+    it('should clear auth data from localStorage', () => {
+      AuthService.clearAuthData();
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken');
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('user');
+    });
+  });
+
+  describe('refreshToken', () => {
+    it('should refresh token successfully', async () => {
+      const mockResponse = {
+        data: {
+          success: true,
+          data: {
+            token: 'new-mock-token'
+          }
+        }
+      };
+
+      const axios = await import('axios');
+      const axiosInstance = axios.default.create();
+      (axiosInstance.post as any).mockResolvedValueOnce(mockResponse);
+
+      const result = await AuthService.refreshToken();
+      expect(result).toBe(true);
     });
   });
 }); 

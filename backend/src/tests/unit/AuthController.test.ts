@@ -51,13 +51,32 @@ describe('AuthController', () => {
         confirmPassword: 'password123'
       };
 
+      // Mock database queries
+      mockDatabase.query
+        .mockResolvedValueOnce({ rows: [] }) // Check existing user
+        .mockResolvedValueOnce({ 
+          rows: [{ 
+            id: 1, 
+            username: 'newuser', 
+            email: 'new@example.com', 
+            created_at: '2024-01-01T00:00:00Z' 
+          }] 
+        }); // Insert user
+
       await AuthController.register(mockRequest as Request, mockResponse as Response);
 
       expect(mockResponse.status).toHaveBeenCalledWith(201);
       expect(mockResponse.json).toHaveBeenCalledWith({
         success: true,
         message: 'User registered successfully',
-        data: { user: { id: 1, username: 'newuser', email: 'new@example.com', createdAt: expect.any(String), isActive: true } }
+        data: { 
+          user: { 
+            id: 1, 
+            username: 'newuser', 
+            email: 'new@example.com', 
+            createdAt: '2024-01-01T00:00:00Z'
+          } 
+        }
       });
     });
 
@@ -120,7 +139,7 @@ describe('AuthController', () => {
         confirmPassword: 'password123'
       };
 
-      // Mock database error
+      // Mock database error on first query
       mockDatabase.query.mockRejectedValueOnce(new Error('Database connection failed'));
 
       await AuthController.register(mockRequest as Request, mockResponse as Response);
@@ -128,7 +147,8 @@ describe('AuthController', () => {
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
         success: false,
-        message: 'Internal server error'
+        message: 'Internal server error',
+        error: 'Database connection failed'
       });
     });
   });
@@ -141,18 +161,21 @@ describe('AuthController', () => {
       };
 
       // Mock database to return user with hashed password
-      mockDatabase.query.mockResolvedValueOnce({
-        rows: [{
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-          password_hash: 'hashed_password_123'
-        }]
-      });
+      mockDatabase.query
+        .mockResolvedValueOnce({
+          rows: [{
+            id: 1,
+            username: 'testuser',
+            email: 'test@example.com',
+            password_hash: 'hashed_password_123',
+            created_at: '2024-01-01T00:00:00Z'
+          }]
+        }) // Find user
+        .mockResolvedValueOnce({ rows: [] }); // Update last login
 
       await AuthController.login(mockRequest as Request, mockResponse as Response);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      // AuthController uses res.json() not res.status(200).json()
       expect(mockResponse.json).toHaveBeenCalledWith({
         success: true,
         message: 'Login successful',
@@ -161,7 +184,8 @@ describe('AuthController', () => {
           user: {
             id: 1,
             username: 'testuser',
-            email: 'test@example.com'
+            email: 'test@example.com',
+            createdAt: '2024-01-01T00:00:00Z'
           }
         }
       });
@@ -197,7 +221,8 @@ describe('AuthController', () => {
           id: 1,
           username: 'testuser',
           email: 'test@example.com',
-          password_hash: 'hashed_password_123'
+          password_hash: 'hashed_password_123',
+          created_at: '2024-01-01T00:00:00Z'
         }]
       });
 
@@ -219,12 +244,33 @@ describe('AuthController', () => {
     it('should return user profile successfully', async () => {
       mockRequest.params = { id: '1' };
 
+      // Mock database to return user
+      mockDatabase.query.mockResolvedValueOnce({
+        rows: [{
+          id: 1,
+          username: 'testuser',
+          email: 'test@example.com',
+          created_at: '2024-01-01T00:00:00Z',
+          last_login: '2024-01-01T12:00:00Z',
+          is_active: true
+        }]
+      });
+
       await AuthController.getProfile(mockRequest as Request, mockResponse as Response);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      // AuthController uses res.json() not res.status(200).json()
       expect(mockResponse.json).toHaveBeenCalledWith({
         success: true,
-        data: { user: { id: 1, username: 'testuser', email: 'test@example.com' } }
+        data: { 
+          user: { 
+            id: 1, 
+            username: 'testuser', 
+            email: 'test@example.com',
+            createdAt: '2024-01-01T00:00:00Z',
+            lastLogin: '2024-01-01T12:00:00Z',
+            isActive: true
+          } 
+        }
       });
     });
 
