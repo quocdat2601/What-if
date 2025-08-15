@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { vi, beforeAll, afterAll } from 'vitest';
 
 // Mock localStorage
 const localStorageMock = {
@@ -43,7 +43,7 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 
 // Suppress console warnings in tests
 const originalError = console.error;
-global.beforeAll(() => {
+beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
       typeof args[0] === 'string' &&
@@ -55,6 +55,6 @@ global.beforeAll(() => {
   };
 });
 
-global.afterAll(() => {
+afterAll(() => {
   console.error = originalError;
 });

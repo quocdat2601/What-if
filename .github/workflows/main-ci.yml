@@ -130,7 +130,6 @@ jobs:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
         args: --severity-threshold=high
-        working-directory: ./backend
 
   quality:
     name: Code Quality
