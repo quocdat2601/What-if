@@ -43,7 +43,7 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 
 // Suppress console warnings in tests
 const originalError = console.error;
-beforeAll(() => {
+global.beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
       typeof args[0] === 'string' &&
@@ -55,6 +55,6 @@ beforeAll(() => {
   };
 });
 
-afterAll(() => {
+global.afterAll(() => {
   console.error = originalError;
 });

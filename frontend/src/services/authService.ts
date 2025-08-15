@@ -76,13 +76,8 @@ export class AuthService {
      * Login user
      */
     static async login(data: LoginRequest): Promise<ApiResponse<AuthResponse>> {
-        try {
-            const response = await api.post<ApiResponse<AuthResponse>>('/auth/login', data);
-            return response.data;
-        } catch (error: any) {
-            // Always throw the error to let the component handle it
-            throw error;
-        }
+        const response = await api.post<ApiResponse<AuthResponse>>('/auth/login', data);
+        return response.data;
     }
 
     /**

@@ -31,7 +31,7 @@ const Toast: React.FC<ToastProps> = ({
     }, [isVisible, duration, onClose]);
 
     const getToastStyles = () => {
-        const baseStyles = "fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ease-in-out";
+        const baseStyles = 'fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ease-in-out';
         
         switch (type) {
             case 'success':
