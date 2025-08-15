@@ -213,7 +213,7 @@ export class PlayerRepository {
         
         try {
             const result = await database.query(query, [limit, offset]);
-            return result.rows.map(row => Player.fromData(row));
+            return result.rows.map((row: any) => Player.fromData(row));
         } catch (error) {
             console.error('Error finding active players:', error);
             throw new Error('Failed to find active players');
@@ -233,7 +233,7 @@ export class PlayerRepository {
         
         try {
             const result = await database.query(query, [`%${pattern}%`, limit]);
-            return result.rows.map(row => Player.fromData(row));
+            return result.rows.map((row: any) => Player.fromData(row));
         } catch (error) {
             console.error('Error searching players by username:', error);
             throw new Error('Failed to search players');

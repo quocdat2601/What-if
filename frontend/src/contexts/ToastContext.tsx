@@ -2,8 +2,8 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import Toast, { ToastType } from '../components/Toast';
 
 interface ToastContextType {
-    showToast: (message: string, type: ToastType, duration?: number) => void;
-    hideToast: (id: string) => void;
+    showToast: (_message: string, _type: ToastType, _duration?: number) => void;
+    hideToast: (_id: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
