@@ -125,11 +125,11 @@ jobs:
       run: npm audit --audit-level moderate
 
     - name: Run Snyk security scan
-      uses: snyk/actions/node@master
+      run: |
+        cd backend
+        npx snyk test --severity-threshold=high
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        args: --severity-threshold=high
 
   quality:
     name: Code Quality
